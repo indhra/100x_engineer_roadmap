@@ -8,7 +8,17 @@
 
 ---
 
-## 📌 Vision Statement
+## � Companion Documents
+
+| Document | Purpose |
+|----------|---------|
+| **[SYSTEMS.md](systems/SYSTEMS.md)** | Mindset, habits, daily routines, continuous growth system |
+| **[RESOURCES.md](systems/RESOURCES.md)** | Newsletters, follows, tools, learning resources |
+| **[WEEKLY_TEMPLATE.md](systems/WEEKLY_TEMPLATE.md)** | Weekly review template |
+
+---
+
+## �📌 Vision Statement
 
 > *"The model is the new runtime. Your job is to make it run responsibly."*  
 > — OpenAI Engineer, 2025
