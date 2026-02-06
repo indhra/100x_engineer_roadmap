@@ -41,20 +41,28 @@ Every AI failure falls into one of these categories. Knowing the category determ
 | **Stale retrieval** | Retrieved outdated information | Documents not updated | Implement document refresh pipeline, add timestamps to metadata |
 
 **Retrieval debugging flow:**
-```
-Wrong answer?
-    │
-    ▼
-Check: Was correct info in retrieved chunks?
-    ├── No → RETRIEVAL FAILURE
-    │   ├── Was correct info in your document store at all?
-    │   │   ├── No → Data gap. Add the data.
-    │   │   └── Yes → Retrieval pipeline problem
-    │   │       ├── Check embeddings: Is query similar to answer doc?
-    │   │       ├── Check chunking: Is the answer split across chunks?
-    │   │       └── Check filters: Are metadata filters too restrictive?
-    │   │
-    └── Yes → GENERATION FAILURE (see Category 2)
+
+```mermaid
+flowchart TD
+    Start(["🚨 Wrong Answer?"]) --> Check{"Was correct info<br/>in retrieved chunks?"}
+    
+    Check -->|No| RF["🚨 RETRIEVAL FAILURE"]
+    Check -->|Yes| GF["🚨 GENERATION FAILURE<br/><i>See Category 2</i>"]
+    
+    RF --> Store{"Was correct info<br/>in document store?"}
+    Store -->|No| Gap["📁 Data Gap<br/><i>Add the data</i>"]
+    Store -->|Yes| Pipeline["🔧 Retrieval Pipeline Problem"]
+    
+    Pipeline --> Embed["🔍 Check Embeddings<br/><i>Is query similar to answer doc?</i>"]
+    Pipeline --> Chunking["✂️ Check Chunking<br/><i>Is answer split across chunks?</i>"]
+    Pipeline --> Filters["📊 Check Filters<br/><i>Are metadata filters too restrictive?</i>"]
+    
+    style RF fill:#8b0000,stroke:#a00000,color:#fff
+    style GF fill:#8b4513,stroke:#a0522d,color:#fff
+    style Gap fill:#2d5016,stroke:#4a7c23,color:#fff
+    style Embed fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style Chunking fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style Filters fill:#1a4d8f,stroke:#2a6ab8,color:#fff
 ```
 
 ### Category 2: Generation Failures (The AI had the right info but reasoned wrong)
@@ -98,33 +106,33 @@ Define success → Build eval pipeline → Build system → Measure → Improve 
 
 ### The Evaluation Stack
 
-```
-┌──────────────────────────────────────────────────────┐
-│                  EVALUATION LAYERS                    │
-│                                                       │
-│  ┌─────────────────────────────────────────────────┐ │
-│  │  LAYER 1: COMPONENT EVALUATION                   │ │
-│  │  Test each piece independently                    │ │
-│  │  • Retrieval quality (are we finding right docs?) │ │
-│  │  • Generation quality (is the answer good?)       │ │
-│  │  • Tool calling (is the right tool called?)       │ │
-│  └─────────────────────────────────────────────────┘ │
-│                                                       │
-│  ┌─────────────────────────────────────────────────┐ │
-│  │  LAYER 2: END-TO-END EVALUATION                  │ │
-│  │  Test the complete pipeline                       │ │
-│  │  • Input → Output quality                        │ │
-│  │  • User satisfaction proxy                        │ │
-│  └─────────────────────────────────────────────────┘ │
-│                                                       │
-│  ┌─────────────────────────────────────────────────┐ │
-│  │  LAYER 3: PRODUCTION MONITORING                  │ │
-│  │  Continuous evaluation on real traffic            │ │
-│  │  • Drift detection                               │ │
-│  │  • User feedback signals                          │ │
-│  │  • Quality degradation alerts                     │ │
-│  └─────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph L1["🧩 LAYER 1: Component Evaluation"]
+        direction LR
+        R1["Retrieval Quality<br/><i>Finding right docs?</i>"]
+        G1["Generation Quality<br/><i>Is answer good?</i>"]
+        T1["Tool Calling<br/><i>Right tool called?</i>"]
+    end
+    
+    subgraph L2["🎯 LAYER 2: End-to-End Evaluation"]
+        direction LR
+        E2E["Input → Output Quality"]
+        Sat["User Satisfaction Proxy"]
+    end
+    
+    subgraph L3["📊 LAYER 3: Production Monitoring"]
+        direction LR
+        Drift["Drift Detection"]
+        Feedback["User Feedback Signals"]
+        Alert["Quality Degradation Alerts"]
+    end
+    
+    L1 --> L2 --> L3
+    
+    style L1 fill:#16213e,stroke:#1f4068,color:#fff
+    style L2 fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style L3 fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 ### Retrieval Metrics: Is the Search Working?
@@ -270,52 +278,50 @@ AI observability ALSO tracks: reasoning quality, context relevancy, token usage,
 
 ### The AI Observability Stack
 
+```mermaid
+flowchart TB
+    subgraph Tracing["🔍 TRACING <i>(per-request)</i>"]
+        direction LR
+        T1["Full Trace<br/>input→retrieval→generation"]
+        T2["LLM Calls<br/>prompt, response, tokens"]
+        T3["Latency Breakdown"]
+    end
+    
+    subgraph Evaluation["✅ EVALUATION <i>(per-output)</i>"]
+        direction LR
+        E1["Automated Scoring"]
+        E2["Faithfulness/<br/>Relevancy"]
+        E3["Ground Truth<br/>Comparison"]
+    end
+    
+    subgraph Monitoring["📊 MONITORING <i>(aggregate)</i>"]
+        direction LR
+        M1["Quality Trends"]
+        M2["Cost per Query"]
+        M3["Latency P50/P95/P99"]
+        M4["Drift Detection"]
+    end
+    
+    subgraph Alerting["🚨 ALERTING"]
+        direction LR
+        A1["Quality Below Threshold"]
+        A2["Cost Exceeds Budget"]
+        A3["New Failure Pattern"]
+    end
+    
+    Tracing --> Evaluation --> Monitoring --> Alerting
+    
+    style Tracing fill:#16213e,stroke:#1f4068,color:#fff
+    style Evaluation fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Monitoring fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style Alerting fill:#8b0000,stroke:#a00000,color:#fff
 ```
-┌──────────────────────────────────────────────────────────┐
-│                    AI OBSERVABILITY                        │
-│                                                           │
-│  ┌───────────────────────────────────────────────────┐   │
-│  │  TRACING (per-request)                             │   │
-│  │  • Full trace: input → retrieval → generation      │   │
-│  │  • Each LLM call: prompt, response, tokens, cost   │   │
-│  │  • Tool calls: input, output, duration             │   │
-│  │  • Latency breakdown per component                 │   │
-│  │                                                     │   │
-│  │  Tools: Langfuse, LangSmith, Phoenix (Arize)       │   │
-│  └───────────────────────────────────────────────────┘   │
-│                                                           │
-│  ┌───────────────────────────────────────────────────┐   │
-│  │  EVALUATION (per-output)                           │   │
-│  │  • Automated quality scoring on live traffic       │   │
-│  │  • Per-query faithfulness, relevancy scores        │   │
-│  │  • Ground truth comparison (where available)       │   │
-│  │                                                     │   │
-│  │  Tools: DeepEval, Ragas, Braintrust, custom        │   │
-│  └───────────────────────────────────────────────────┘   │
-│                                                           │
-│  ┌───────────────────────────────────────────────────┐   │
-│  │  MONITORING (aggregate)                            │   │
-│  │  • Quality score trends over time                  │   │
-│  │  • Cost per query / per day / per user             │   │
-│  │  • Latency percentiles (P50, P95, P99)             │   │
-│  │  • Token usage patterns                            │   │
-│  │  • Error rates by category                         │   │
-│  │  • Drift detection (embedding drift, query drift)  │   │
-│  │                                                     │   │
-│  │  Tools: Grafana, DataDog, custom dashboards        │   │
-│  └───────────────────────────────────────────────────┘   │
-│                                                           │
-│  ┌───────────────────────────────────────────────────┐   │
-│  │  ALERTING                                          │   │
-│  │  • Quality score drops below threshold             │   │
-│  │  • Cost exceeds budget                             │   │
-│  │  • Latency P95 exceeds SLA                         │   │
-│  │  • New failure pattern detected                    │   │
-│  │                                                     │   │
-│  │  Tools: PagerDuty, Slack alerts, custom            │   │
-│  └───────────────────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────┘
-```
+
+**Tools:**
+- **Tracing:** Langfuse, LangSmith, Phoenix (Arize)
+- **Evaluation:** DeepEval, RAGAS, Braintrust
+- **Monitoring:** Grafana, DataDog, custom dashboards
+- **Alerting:** PagerDuty, Slack alerts, custom
 
 ### Tracing: The Core of AI Debugging
 
@@ -474,46 +480,42 @@ The model generates information that is **fluent, confident, and wrong** — not
 
 ### Anti-Hallucination Architecture
 
-```
-┌──────────────────────────────────────────────────────┐
-│               ANTI-HALLUCINATION STACK                │
-│                                                       │
-│  LAYER 1: Context Engineering                         │
-│  ┌─────────────────────────────────────────────────┐ │
-│  │ "Answer ONLY using the documents provided below. │ │
-│  │  If the answer is not in the documents, say      │ │
-│  │  'I don't have enough information to answer.'"   │ │
-│  └─────────────────────────────────────────────────┘ │
-│                                                       │
-│  LAYER 2: Citation Requirement                        │
-│  ┌─────────────────────────────────────────────────┐ │
-│  │ "Cite the specific document and section for      │ │
-│  │  every claim. Format: [Source: doc_name, p.X]"   │ │
-│  └─────────────────────────────────────────────────┘ │
-│                                                       │
-│  LAYER 3: Output Validation                          │
-│  ┌─────────────────────────────────────────────────┐ │
-│  │ Check: Are all citations verifiable?              │ │
-│  │ Check: Does answer contain claims without         │ │
-│  │        citations?                                 │ │
-│  │ Check: Do cited passages support the claims?      │ │
-│  └─────────────────────────────────────────────────┘ │
-│                                                       │
-│  LAYER 4: Confidence Signaling                       │
-│  ┌─────────────────────────────────────────────────┐ │
-│  │ "Express your confidence level:                   │ │
-│  │  HIGH - directly stated in provided documents     │ │
-│  │  MEDIUM - can be inferred from documents          │ │
-│  │  LOW - limited evidence in documentss             │ │
-│  │  NONE - no relevant information found"            │ │
-│  └─────────────────────────────────────────────────┘ │
-│                                                       │
-│  LAYER 5: LLM-as-Judge Validation                    │
-│  ┌─────────────────────────────────────────────────┐ │
-│  │ Second LLM checks: "Does this answer only        │ │
-│  │ contain information from the provided context?"   │ │
-│  └─────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph L1["📝 Layer 1: Context Engineering"]
+        CE["\"Answer ONLY using the documents provided.<br/>If not in docs, say 'I don't have enough info.'\""]
+    end
+    
+    subgraph L2["📑 Layer 2: Citation Requirement"]
+        CR["\"Cite specific document and section for every claim.<br/>Format: [Source: doc_name, p.X]\""]
+    end
+    
+    subgraph L3["✅ Layer 3: Output Validation"]
+        direction LR
+        V1["Citations<br/>verifiable?"]
+        V2["Uncited<br/>claims?"]
+        V3["Passages<br/>support claims?"]
+    end
+    
+    subgraph L4["📊 Layer 4: Confidence Signaling"]
+        direction LR
+        C1["HIGH<br/><i>direct</i>"]
+        C2["MEDIUM<br/><i>inferred</i>"]
+        C3["LOW<br/><i>limited</i>"]
+        C4["NONE<br/><i>no info</i>"]
+    end
+    
+    subgraph L5["🧐 Layer 5: LLM-as-Judge Validation"]
+        Judge["Second LLM verifies answer<br/>stays within provided context"]
+    end
+    
+    L1 --> L2 --> L3 --> L4 --> L5
+    
+    style L1 fill:#16213e,stroke:#1f4068,color:#fff
+    style L2 fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style L3 fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style L4 fill:#8b4513,stroke:#a0522d,color:#fff
+    style L5 fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 ### Architect's Mental Model
@@ -538,33 +540,23 @@ Users (or data) inserting instructions that override your system's intended beha
 
 ### Defense Architecture
 
-```
-┌────────────────────────────────────────────────┐
-│ User Input                                      │
-│     ↓                                           │
-│ ┌──────────────────┐                            │
-│ │ INPUT GUARDRAIL  │ ← Block injection attempts │
-│ │ • Pattern detect │                            │
-│ │ • LLM classifier │                            │
-│ └────────┬─────────┘                            │
-│          ↓                                      │
-│ ┌──────────────────┐                            │
-│ │ DATA ISOLATION   │ ← Separate instructions    │
-│ │ • XML tags       │   from data                │
-│ │ • Role markers   │                            │
-│ └────────┬─────────┘                            │
-│          ↓                                      │
-│ ┌──────────────────┐                            │
-│ │ LLM PROCESSING   │                            │
-│ └────────┬─────────┘                            │
-│          ↓                                      │
-│ ┌──────────────────┐                            │
-│ │ OUTPUT GUARDRAIL │ ← Block sensitive data     │
-│ │ • PII detection  │   leakage                  │
-│ │ • Content filter │                            │
-│ │ • Format check   │                            │
-│ └──────────────────┘                            │
-└────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    Input["📨 User Input"] --> Guard1["🛡️ INPUT GUARDRAIL<br/><i>Pattern detect + LLM classifier</i>"]
+    
+    Guard1 -->|Block injection attempts| Isolate["🔐 DATA ISOLATION<br/><i>XML tags + Role markers</i>"]
+    
+    Isolate -->|Separate instructions from data| LLM["🤖 LLM PROCESSING"]
+    
+    LLM --> Guard2["🛡️ OUTPUT GUARDRAIL<br/><i>PII detection + Content filter</i>"]
+    
+    Guard2 -->|Block sensitive data leakage| Output["✅ Safe Output"]
+    
+    style Guard1 fill:#8b0000,stroke:#a00000,color:#fff
+    style Isolate fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style LLM fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Guard2 fill:#8b0000,stroke:#a00000,color:#fff
+    style Output fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 **Key principle:** Use XML tags or similar delimiters to clearly separate instructions from user data in the prompt:

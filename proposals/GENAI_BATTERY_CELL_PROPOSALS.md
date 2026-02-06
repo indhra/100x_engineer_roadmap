@@ -69,18 +69,18 @@ quadrantChart
     title GenAI Proposals — Impact vs Effort
     x-axis Low Effort --> High Effort
     y-axis Low Impact --> High Impact
-    quadrant-1 Strategic Bets
-    quadrant-2 Quick Wins ✅
-    quadrant-3 Low Priority
-    quadrant-4 Major Projects
-    P4 Spec Sheet Intel: [0.25, 0.70]
-    P1 CellChat Copilot: [0.40, 0.85]
-    P3 Auto Reports: [0.35, 0.80]
-    P6 Cell Compare: [0.45, 0.65]
-    P8 Knowledge Agent: [0.30, 0.55]
-    P2 Anomaly Detective: [0.70, 0.90]
-    P5 Protocol Optimizer: [0.75, 0.75]
-    P7 Life Forecaster: [0.80, 0.85]
+    "quadrant-1 Strategic Bets 🔴 "
+    "quadrant-2 Quick Wins ✅"
+    "quadrant-3 Low Priority"
+    "quadrant-4 Major Projects"
+    "P4 Spec Sheet Intel: [0.25, 0.70]"
+    "P1 CellChat Copilot: [0.40, 0.85]"
+    "P3 Auto Reports: [0.35, 0.80]"
+    "P6 Cell Compare: [0.45, 0.65]"
+    "P8 Knowledge Agent: [0.30, 0.55]"
+    "P2 Anomaly Detective: [0.70, 0.90]"
+    "P5 Protocol Optimizer: [0.75, 0.75]"
+    "P7 Life Forecaster: [0.80, 0.85]"
 ```
 
 ---

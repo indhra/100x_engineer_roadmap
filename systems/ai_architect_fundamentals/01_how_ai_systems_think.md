@@ -188,45 +188,48 @@ $$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)
 
 One attention head might learn syntax (subject-verb agreement). Another learns factual associations. Another learns coreference (what "it" refers to). **Multiple heads = different angles on meaning**.
 
-```
-Head 1: Grammar patterns    ────┐
-Head 2: Entity relationships ────┼──→ Combined understanding
-Head 3: Temporal reasoning  ────┤
-Head 4: Causal relationships────┘
+```mermaid
+flowchart LR
+    subgraph Heads["Multi-Head Attention"]
+        H1["Head 1<br/>Grammar Patterns"]
+        H2["Head 2<br/>Entity Relations"]
+        H3["Head 3<br/>Temporal Reasoning"]
+        H4["Head 4<br/>Causal Links"]
+    end
+    
+    H1 --> Concat["Concatenate"]
+    H2 --> Concat
+    H3 --> Concat
+    H4 --> Concat
+    Concat --> Linear["Linear Layer"]
+    Linear --> Out["Combined<br/>Understanding"]
+    
+    style Out fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 ### The Full Transformer Architecture (Decoder-Only for LLMs)
 
-```
-Input tokens
-     ↓
-[Token Embeddings + Position Embeddings]
-     ↓
-┌─────────────── Transformer Block (×N) ──────────────┐
-│  ┌──────────────────────────────────┐                │
-│  │  Masked Multi-Head Attention     │ ← can only     │
-│  │  (each token attends to previous │   look left    │
-│  │   tokens, not future ones)       │                │
-│  └──────────────┬───────────────────┘                │
-│                 ↓                                    │
-│  ┌──────────────────────────────────┐                │
-│  │  Layer Normalization + Residual  │                │
-│  └──────────────┬───────────────────┘                │
-│                 ↓                                    │
-│  ┌──────────────────────────────────┐                │
-│  │  Feed-Forward Neural Network     │ ← where        │
-│  │  (expand → activate → compress)  │   "knowledge"  │
-│  │                                  │   is stored    │
-│  └──────────────┬───────────────────┘                │
-│                 ↓                                    │
-│  ┌──────────────────────────────────┐                │
-│  │  Layer Normalization + Residual  │                │
-│  └──────────────┬───────────────────┘                │
-└─────────────────┼───────────────────────────────────┘
-                  ↓ (repeat N times: GPT-4 ≈ 120 layers)
-[Output probabilities over entire vocabulary]
-     ↓
-"Next token prediction"
+```mermaid
+flowchart TB
+    Input["Input Tokens"] --> Embed["Token + Position<br/>Embeddings"]
+    
+    subgraph Block["Transformer Block × N"]
+        direction TB
+        Attn["🎯 Masked Multi-Head Attention<br/><i>Each token attends to previous only</i>"]
+        Norm1["Layer Norm + Residual"]
+        FFN["💾 Feed-Forward Network<br/><i>Where 'knowledge' is stored</i>"]
+        Norm2["Layer Norm + Residual"]
+        
+        Attn --> Norm1 --> FFN --> Norm2
+    end
+    
+    Embed --> Block
+    Block -->|"Repeat 80-120 layers"| Output["Vocabulary Probabilities"]
+    Output --> Next["📝 Next Token Prediction"]
+    
+    style Block fill:#1a1a2e,stroke:#4a4a6a,color:#fff
+    style Input fill:#16213e,stroke:#1f4068,color:#fff
+    style Next fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 ### Architect's Mental Model
@@ -386,25 +389,31 @@ Beginning                                    End
 
 ### Architect's Decision Framework
 
-```
-Start here
-    │
-    ▼
-Is data privacy critical? ──Yes──→ Open model (self-hosted)
-    │ No
-    ▼
-Is this a prototype? ──Yes──→ Closed API (fast iteration)
-    │ No
-    ▼
-Volume > 1M tokens/day? ──Yes──→ Cost analysis needed
-    │ No                          ├─ Closed may still be cheaper
-    ▼                             └─ Open if you have GPU infra
-Do you need the absolute
-best quality? ──Yes──→ Closed API (GPT-4o, Claude)
-    │ No
-    ▼
-Open model likely optimal
-(cost, control, customization)
+```mermaid
+flowchart TD
+    Start([Start]) --> Privacy{Data Privacy<br/>Critical?}
+    Privacy -->|Yes| Open["✅ Open Model<br/>(Self-Hosted)"]
+    Privacy -->|No| Proto{Prototype<br/>Stage?}
+    
+    Proto -->|Yes| Closed["✅ Closed API<br/>(Fast Iteration)"]
+    Proto -->|No| Volume{"Volume ><br/>1M tokens/day?"}
+    
+    Volume -->|Yes| CostAnalysis{Cost Analysis}
+    Volume -->|No| Quality{Need Best<br/>Quality?}
+    
+    CostAnalysis --> GPU{"Have GPU<br/>Infra?"}
+    GPU -->|Yes| OpenCost["✅ Open Model"]
+    GPU -->|No| ClosedCost["✅ Closed API"]
+    
+    Quality -->|Yes| ClosedQ["✅ Closed API<br/>(GPT-4o, Claude)"]
+    Quality -->|No| Optimal["✅ Open Model<br/>(Cost + Control)"]
+    
+    style Open fill:#2d5016,stroke:#4a7c23,color:#fff
+    style Closed fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style OpenCost fill:#2d5016,stroke:#4a7c23,color:#fff
+    style ClosedCost fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style ClosedQ fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style Optimal fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 ### Architect Question

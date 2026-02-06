@@ -103,85 +103,83 @@ LLMs have three problems that RAG solves:
 
 ### RAG Architecture
 
-```
-User Query: "What's the recommended charging temp for NMC811 cells?"
-     │
-     ▼
-┌─────────────────────────────────────────────────────┐
-│  1. QUERY PROCESSING                                 │
-│     • Expand query: "NMC811 charging temperature     │
-│       range specifications limit thermal"            │
-│     • Generate query embedding                       │
-└────────────────────┬────────────────────────────────┘
-                     ▼
-┌─────────────────────────────────────────────────────┐
-│  2. RETRIEVAL                                        │
-│     ┌──────────────┐    ┌──────────────────┐        │
-│     │ Vector Search │    │ Keyword Search   │        │
-│     │ (Semantic)    │    │ (BM25/Sparse)    │        │
-│     │ Top 20        │    │ Top 20           │        │
-│     └──────┬───────┘    └──────┬───────────┘        │
-│            └────────┬──────────┘                    │
-│                     ▼                                │
-│            ┌────────────────┐                        │
-│            │ Merge & Dedupe │                        │
-│            │ (~30 unique)   │                        │
-│            └────────┬───────┘                        │
-│                     ▼                                │
-│            ┌────────────────┐                        │
-│            │  Reranker       │                        │
-│            │  (Cross-encoder)│                        │
-│            │  Top 5          │                        │
-│            └────────┬───────┘                        │
-└─────────────────────┼───────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────┐
-│  3. GENERATION                                       │
-│     System: "You are an EV battery specialist.       │
-│              Answer using ONLY the provided context. │
-│              Cite sources."                          │
-│     Context: [Top 5 reranked chunks]                 │
-│     Query: "What's the recommended charging temp...?"│
-│                     ▼                                │
-│     LLM generates grounded response with citations   │
-└─────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    Query["📝 User Query<br/><i>'NMC811 charging temp?'</i>"]
+    
+    subgraph Process["1️⃣ Query Processing"]
+        Expand["Query Expansion"]
+        Embed["Generate Embedding"]
+    end
+    
+    subgraph Retrieval["2️⃣ Retrieval"]
+        direction LR
+        Vector[("🔍 Vector Search<br/>Semantic<br/>Top 20")]
+        BM25[("📚 BM25 Search<br/>Keywords<br/>Top 20")]
+    end
+    
+    subgraph Rerank["Reranking Stage"]
+        Merge["Merge & Dedupe<br/>~30 unique"]
+        Cross["Cross-Encoder Reranker<br/>→ Top 5"]
+    end
+    
+    subgraph Generation["3️⃣ Generation"]
+        Prompt["System Prompt + Context + Query"]
+        LLM["🤖 LLM"]
+        Answer["✅ Grounded Response<br/>with Citations"]
+    end
+    
+    Query --> Process
+    Expand --> Embed
+    Process --> Retrieval
+    Vector --> Merge
+    BM25 --> Merge
+    Merge --> Cross
+    Cross --> Prompt
+    Prompt --> LLM --> Answer
+    
+    style Query fill:#16213e,stroke:#1f4068,color:#fff
+    style Answer fill:#2d5016,stroke:#4a7c23,color:#fff
+    style LLM fill:#5c2751,stroke:#8e3c7c,color:#fff
 ```
 
 ### The Document Pipeline (Before Retrieval)
 
-```
-Raw Documents (PDFs, HTML, manuals)
-     │
-     ▼
-┌──────────────────┐
-│  PARSING          │  Extract text, tables, images
-│  • PyMuPDF        │  Challenge: Tables in PDFs are HARD
-│  • Unstructured   │  Challenge: Technical diagrams
-│  • Docling        │
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│  CHUNKING         │  Split into retrievable pieces
-│  Strategies:      │
-│  • Fixed (512 tok)│  Simple but may split sentences
-│  • Recursive      │  Split on ¶ → sentence → char
-│  • Semantic       │  Split where meaning shifts
-│  • Section-aware  │  Respect document structure
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│  EMBEDDING        │  Convert chunks to vectors
-│  • Batch process  │
-│  • Store metadata │  (source, page, section, date)
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│  VECTOR STORE     │  Index for fast retrieval
-│  • FAISS (local)  │
-│  • Qdrant         │
-│  • Chroma         │
-│  • pgvector       │
-└──────────────────┘
+```mermaid
+flowchart TB
+    Docs["📄 Raw Documents<br/>PDFs, HTML, Manuals"]
+    
+    subgraph Parse["🔍 PARSING"]
+        direction LR
+        P1["PyMuPDF"]
+        P2["Unstructured"]
+        P3["Docling"]
+    end
+    
+    subgraph Chunk["✂️ CHUNKING"]
+        direction LR
+        C1["Fixed<br/>512 tokens"]
+        C2["Recursive<br/>¶→sent→char"]
+        C3["Semantic<br/>meaning shifts"]
+        C4["Section-aware<br/>doc structure"]
+    end
+    
+    subgraph Embed["📊 EMBEDDING"]
+        E1["Batch Process"]
+        E2["Add Metadata<br/><i>source, page, date</i>"]
+    end
+    
+    subgraph Store["🗄️ VECTOR STORE"]
+        direction LR
+        S1[("Qdrant")]
+        S2[("FAISS")]
+        S3[("pgvector")]
+    end
+    
+    Docs --> Parse --> Chunk --> Embed --> Store
+    
+    style Docs fill:#16213e,stroke:#1f4068,color:#fff
+    style Store fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 ### Chunking: The Most Underestimated Decision
@@ -275,19 +273,30 @@ These are the five fundamental patterns for composing LLM calls into systems. Ba
 
 **What:** Break a task into sequential steps, each using the output of the previous.
 
-```
-Step 1: Extract         Step 2: Analyze         Step 3: Report
-┌──────────────┐       ┌──────────────┐       ┌──────────────┐
-│ LLM: Extract │──────▶│ LLM: Analyze │──────▶│ LLM: Format  │
-│ battery data │  data │ anomalies    │ result│ as report    │
-│ from report  │       │ in data      │       │              │
-└──────────────┘       └──────┬───────┘       └──────────────┘
-                              │
-                        ┌─────▼─────┐
-                        │ Gate:      │
-                        │ Anomalies  │──No──▶ "Normal" response
-                        │ found?     │
-                        └───────────┘
+```mermaid
+flowchart LR
+    subgraph Step1["Step 1: Extract"]
+        E["🤖 LLM<br/>Extract battery data"]
+    end
+    
+    subgraph Step2["Step 2: Analyze"]
+        A["🤖 LLM<br/>Analyze anomalies"]
+        Gate{"Anomalies<br/>found?"}
+    end
+    
+    subgraph Step3["Step 3: Report"]
+        R["🤖 LLM<br/>Format as report"]
+    end
+    
+    E -->|data| A --> Gate
+    Gate -->|Yes| R
+    Gate -->|No| Normal["✅ 'Normal' response"]
+    R --> Output["📝 Final Report"]
+    
+    style E fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style A fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style R fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Output fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 **When to use:** Task is clearly decomposable into sequential steps. Each step is easier than the whole.
@@ -298,19 +307,23 @@ Step 1: Extract         Step 2: Analyze         Step 3: Report
 
 **What:** Classify the input, then route to a specialized handler.
 
-```
-                    ┌─────────────┐
-                    │  Classifier  │
-                    │  LLM         │
-                    └──────┬──────┘
-                           │
-              ┌────────────┼────────────┐
-              ▼            ▼            ▼
-        ┌──────────┐ ┌──────────┐ ┌──────────┐
-        │ Battery   │ │ Charging │ │ General  │
-        │ Health    │ │ Issues   │ │ Inquiry  │
-        │ Specialist│ │ Special. │ │ Handler  │
-        └──────────┘ └──────────┘ └──────────┘
+```mermaid
+flowchart TB
+    Input["📨 User Query"] --> Classifier["🤖 Classifier LLM"]
+    
+    Classifier --> Battery["🔋 Battery Health<br/>Specialist"]
+    Classifier --> Charging["⚡ Charging Issues<br/>Specialist"]
+    Classifier --> General["💬 General Inquiry<br/>Handler"]
+    
+    Battery --> Response["✅ Response"]
+    Charging --> Response
+    General --> Response
+    
+    style Classifier fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Battery fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style Charging fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style General fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style Response fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 **When to use:** Different input types need fundamentally different handling. One prompt can't handle all cases well.
@@ -321,20 +334,25 @@ Step 1: Extract         Step 2: Analyze         Step 3: Report
 
 **What:** Run multiple LLM calls simultaneously, then combine results.
 
-```
-                         Input
-                           │
-              ┌────────────┼────────────┐
-              ▼            ▼            ▼
-        ┌──────────┐ ┌──────────┐ ┌──────────┐
-        │ Safety   │ │ Content  │ │ Answer   │
-        │ Check    │ │ Guard    │ │ Generator│
-        └─────┬────┘ └─────┬───┘ └─────┬────┘
-              └────────────┼────────────┘
-                           ▼
-                     ┌──────────┐
-                     │ Combiner │
-                     └──────────┘
+```mermaid
+flowchart TB
+    Input["📨 Input"] --> Fork(( ))
+    
+    Fork --> Safety["🛡️ Safety Check"]
+    Fork --> Content["📝 Content Guard"]
+    Fork --> Answer["🤖 Answer Generator"]
+    
+    Safety --> Combine["🔀 Combiner"]
+    Content --> Combine
+    Answer --> Combine
+    
+    Combine --> Output["✅ Final Output"]
+    
+    style Input fill:#16213e,stroke:#1f4068,color:#fff
+    style Safety fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Content fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Answer fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Output fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 Two variants:
@@ -349,26 +367,27 @@ Two variants:
 
 **What:** A central LLM dynamically decides what subtasks to create and delegates them.
 
-```
-                    ┌───────────────┐
-                    │ Orchestrator  │
-                    │ LLM           │
-                    │ "What needs   │
-                    │  to be done?" │
-                    └──────┬───────┘
-                           │ dynamically creates tasks
-              ┌────────────┼────────────┐
-              ▼            ▼            ▼
-        ┌──────────┐ ┌──────────┐ ┌──────────┐
-        │ Worker 1 │ │ Worker 2 │ │ Worker N │
-        │ (task A)  │ │ (task B)  │ │ (task N)  │
-        └─────┬────┘ └─────┬───┘ └─────┬────┘
-              └────────────┼────────────┘
-                           ▼
-                    ┌───────────────┐
-                    │ Orchestrator  │
-                    │ Synthesizes   │
-                    └───────────────┘
+```mermaid
+flowchart TB
+    Input["📨 Complex Task"] --> Orch1["🎼 Orchestrator LLM<br/><i>'What needs to be done?'</i>"]
+    
+    Orch1 -->|"dynamically creates tasks"| Fork(( ))
+    Fork --> W1["👷 Worker 1<br/>Task A"]
+    Fork --> W2["👷 Worker 2<br/>Task B"]
+    Fork --> WN["👷 Worker N<br/>Task N"]
+    
+    W1 --> Orch2["🎼 Orchestrator<br/>Synthesizes Results"]
+    W2 --> Orch2
+    WN --> Orch2
+    
+    Orch2 --> Output["✅ Final Output"]
+    
+    style Orch1 fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Orch2 fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style W1 fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style W2 fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style WN fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style Output fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 **When to use:** You can't predict the subtasks in advance. The task structure depends on the input.
@@ -381,19 +400,18 @@ Two variants:
 
 **What:** One LLM generates, another evaluates, loop until quality threshold is met.
 
-```
-        ┌──────────────┐
-        │  Generator   │
-        │  LLM         │
-        └──────┬───────┘
-               │ draft
-               ▼
-        ┌──────────────┐
-        │  Evaluator   │──── Good enough? ──Yes──▶ Output
-        │  LLM         │
-        └──────┬───────┘
-               │ No + feedback
-               └──────────────────────▶ Back to Generator
+```mermaid
+flowchart LR
+    Input["📨 Input"] --> Gen["🤖 Generator LLM"]
+    Gen -->|draft| Eval["🧐 Evaluator LLM"]
+    
+    Eval --> Check{"Good<br/>enough?"}
+    Check -->|Yes| Output["✅ Final Output"]
+    Check -->|No + feedback| Gen
+    
+    style Gen fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Eval fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style Output fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 **When to use:** Clear evaluation criteria exist. Iterative refinement adds measurable value.
@@ -402,22 +420,34 @@ Two variants:
 
 ### The Architect's Decision Matrix
 
-```
-How complex is the task?
-    │
-    ├── Simple → Single LLM call (don't over-engineer!)
-    │
-    ├── Decomposable steps → Prompt Chaining
-    │
-    ├── Different input types → Routing
-    │
-    ├── Independent subtasks → Parallelization
-    │
-    ├── Unpredictable subtasks → Orchestrator-Workers
-    │
-    ├── Quality-critical → Evaluator-Optimizer
-    │
-    └── Open-ended, complex → Agent (see 2.4)
+```mermaid
+flowchart TD
+    Start(["🎯 Task Complexity?"]) --> Simple{"Simple?"}
+    Simple -->|Yes| Single["✅ Single LLM Call<br/><i>Don't over-engineer!</i>"]
+    Simple -->|No| Decompose{"Decomposable<br/>Steps?"}
+    
+    Decompose -->|Yes| Chain["✅ Prompt Chaining"]
+    Decompose -->|No| Types{"Different<br/>Input Types?"}
+    
+    Types -->|Yes| Route["✅ Routing"]
+    Types -->|No| Indep{"Independent<br/>Subtasks?"}
+    
+    Indep -->|Yes| Parallel["✅ Parallelization"]
+    Indep -->|No| Predict{"Unpredictable<br/>Subtasks?"}
+    
+    Predict -->|Yes| Orch["✅ Orchestrator-Workers"]
+    Predict -->|No| Quality{"Quality<br/>Critical?"}
+    
+    Quality -->|Yes| Eval["✅ Evaluator-Optimizer"]
+    Quality -->|No| Agent["✅ Agent<br/><i>Open-ended, complex</i>"]
+    
+    style Single fill:#2d5016,stroke:#4a7c23,color:#fff
+    style Chain fill:#2d5016,stroke:#4a7c23,color:#fff
+    style Route fill:#2d5016,stroke:#4a7c23,color:#fff
+    style Parallel fill:#2d5016,stroke:#4a7c23,color:#fff
+    style Orch fill:#2d5016,stroke:#4a7c23,color:#fff
+    style Eval fill:#2d5016,stroke:#4a7c23,color:#fff
+    style Agent fill:#8b4513,stroke:#a0522d,color:#fff
 ```
 
 ### The Golden Rule
@@ -444,24 +474,25 @@ A → B → C → D (fixed)             A → ? (model decides)
 
 ### The Agent Loop
 
-```
-┌──────────────────────────────────────────────┐
-│                  AGENT LOOP                   │
-│                                               │
-│  1. Observe  ◄────────────────────────────┐  │
-│     │ (read environment state)            │  │
-│     ▼                                     │  │
-│  2. Think                                 │  │
-│     │ (reason about what to do)           │  │
-│     ▼                                     │  │
-│  3. Act                                   │  │
-│     │ (call a tool, generate output)      │  │
-│     ▼                                     │  │
-│  4. Evaluate                              │  │
-│     │ (did the action succeed?)           │  │
-│     ├── Not done ─────────────────────────┘  │
-│     └── Done → Return result                 │
-└──────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Loop["🔄 AGENT LOOP"]
+        Observe["👁️ 1. Observe<br/><i>Read environment state</i>"]
+        Think["🧠 2. Think<br/><i>Reason about what to do</i>"]
+        Act["⚡ 3. Act<br/><i>Call tool or generate output</i>"]
+        Eval["🎯 4. Evaluate<br/><i>Did the action succeed?</i>"]
+        
+        Observe --> Think --> Act --> Eval
+        Eval -->|Not done| Observe
+    end
+    
+    Eval -->|Done| Result["✅ Return Result"]
+    
+    style Observe fill:#16213e,stroke:#1f4068,color:#fff
+    style Think fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Act fill:#8b4513,stroke:#a0522d,color:#fff
+    style Eval fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style Result fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 ### Tool Design: The Most Important Agent Decision

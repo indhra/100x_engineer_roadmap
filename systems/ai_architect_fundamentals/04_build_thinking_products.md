@@ -27,72 +27,108 @@ Costs don't matter                 $5/day vs $500/day matters
 
 ### The Seven Layers of an AI Product
 
-```
-┌──────────────────────────────────────────────────────────┐
-│  LAYER 7: USER INTERFACE                                  │
-│  Chat, dashboard, API, embedded widget, Slack bot        │
-├──────────────────────────────────────────────────────────┤
-│  LAYER 6: ORCHESTRATION                                   │
-│  Request routing, workflow execution, agent loops         │
-├──────────────────────────────────────────────────────────┤
-│  LAYER 5: INTELLIGENCE                                    │
-│  LLM calls, prompt management, model routing             │
-├──────────────────────────────────────────────────────────┤
-│  LAYER 4: CONTEXT ASSEMBLY                                │
-│  RAG pipeline, memory retrieval, tool results            │
-├──────────────────────────────────────────────────────────┤
-│  LAYER 3: DATA & STORAGE                                  │
-│  Vector DB, document store, user data, conversation      │
-├──────────────────────────────────────────────────────────┤
-│  LAYER 2: SAFETY & QUALITY                                │
-│  Guardrails, evaluation, monitoring, tracing             │
-├──────────────────────────────────────────────────────────┤
-│  LAYER 1: INFRASTRUCTURE                                  │
-│  API gateway, authentication, rate limiting, caching     │
-└──────────────────────────────────────────────────────────┘
+```mermaid
+block-beta
+    columns 1
+    
+    block:L7["💻 LAYER 7: USER INTERFACE"]
+        UI["Chat, Dashboard, API, Widget, Slack Bot"]
+    end
+    
+    block:L6["🎼 LAYER 6: ORCHESTRATION"]
+        Orch["Request Routing, Workflow Execution, Agent Loops"]
+    end
+    
+    block:L5["🧠 LAYER 5: INTELLIGENCE"]
+        Intel["LLM Calls, Prompt Management, Model Routing"]
+    end
+    
+    block:L4["📄 LAYER 4: CONTEXT ASSEMBLY"]
+        Context["RAG Pipeline, Memory Retrieval, Tool Results"]
+    end
+    
+    block:L3["🗄️ LAYER 3: DATA & STORAGE"]
+        Data["Vector DB, Document Store, User Data, Conversations"]
+    end
+    
+    block:L2["🛡️ LAYER 2: SAFETY & QUALITY"]
+        Safety["Guardrails, Evaluation, Monitoring, Tracing"]
+    end
+    
+    block:L1["⚙️ LAYER 1: INFRASTRUCTURE"]
+        Infra["API Gateway, Auth, Rate Limiting, Caching"]
+    end
+    
+    L7 --> L6 --> L5 --> L4 --> L3 --> L2 --> L1
+    
+    style L7 fill:#16213e,stroke:#1f4068,color:#fff
+    style L6 fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style L5 fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style L4 fill:#8b4513,stroke:#a0522d,color:#fff
+    style L3 fill:#2d5016,stroke:#4a7c23,color:#fff
+    style L2 fill:#8b0000,stroke:#a00000,color:#fff
+    style L1 fill:#4a4a4a,stroke:#666666,color:#fff
 ```
 
 ### A Concrete Example: EV Fleet Diagnostic System
 
-```
-┌──────────────────────────────────────────────────────────┐
-│  L7: Fleet Manager Dashboard (React/Next.js)              │
-│      • Chat interface for diagnostics                     │
-│      • Vehicle health dashboard                           │
-│      • Maintenance calendar                               │
-├──────────────────────────────────────────────────────────┤
-│  L6: FastAPI Backend                                      │
-│      • Route: simple query → direct LLM                   │
-│      • Route: diagnostic request → chain + tools          │
-│      • Route: fleet analysis → parallel workers           │
-├──────────────────────────────────────────────────────────┤
-│  L5: Model Router                                         │
-│      • Simple Q&A → Claude Haiku (fast, cheap)            │
-│      • Technical diagnosis → Claude Sonnet (capable)      │
-│      • Report generation → Claude Sonnet (quality)        │
-├──────────────────────────────────────────────────────────┤
-│  L4: Context Assembly                                     │
-│      • RAG: Battery specs + maintenance manuals           │
-│      • Vehicle history: Last 30 days of telemetry         │
-│      • User context: Manager preferences, alert settings  │
-├──────────────────────────────────────────────────────────┤
-│  L3: Data Layer                                           │
-│      • Qdrant: Technical document embeddings              │
-│      • PostgreSQL: Vehicle data, user profiles, sessions  │
-│      • Redis: Conversation cache, response cache          │
-├──────────────────────────────────────────────────────────┤
-│  L2: Safety & Quality                                     │
-│      • Input guardrails (injection detection)             │
-│      • Output guardrails (PII, hallucination check)       │
-│      • Langfuse tracing (every request)                   │
-│      • Async eval on 10% of traffic                       │
-├──────────────────────────────────────────────────────────┤
-│  L1: Infrastructure                                       │
-│      • Docker containers (API + workers)                  │
-│      • API key management                                 │
-│      • Rate limiting (per user + global)                   │
-│      • Response cache (Redis, 1hr TTL)                    │
-└──────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph L7["💻 L7: Fleet Manager Dashboard"]
+        direction LR
+        Chat["Chat Interface"]
+        Health["Vehicle Health"]
+        Cal["Maintenance Calendar"]
+    end
+    
+    subgraph L6["⚙️ L6: FastAPI Backend"]
+        direction LR
+        R1["Simple Query→LLM"]
+        R2["Diagnostic→Chain"]
+        R3["Fleet Analysis→Workers"]
+    end
+    
+    subgraph L5["🤖 L5: Model Router"]
+        direction LR
+        Haiku["Simple Q&A→Haiku"]
+        Sonnet["Diagnosis→Sonnet"]
+        Report["Reports→Sonnet"]
+    end
+    
+    subgraph L4["📄 L4: Context Assembly"]
+        direction LR
+        RAG["RAG: Battery Specs"]
+        History["Vehicle History"]
+        User["User Context"]
+    end
+    
+    subgraph L3["🗄️ L3: Data Layer"]
+        direction LR
+        Qdrant[("Qdrant")]
+        PG[("PostgreSQL")]
+        Redis[("Redis")]
+    end
+    
+    subgraph L2["🛡️ L2: Safety & Quality"]
+        direction LR
+        Guard["Input Guardrails"]
+        Out["Output Guardrails"]
+        Trace["Langfuse Tracing"]
+    end
+    
+    subgraph L1["⚙️ L1: Infrastructure"]
+        direction LR
+        Docker["Docker"]
+        Keys["API Keys"]
+        Rate["Rate Limiting"]
+    end
+    
+    L7 --> L6 --> L5 --> L4 --> L3
+    L3 --> L2 --> L1
+    
+    style L7 fill:#16213e,stroke:#1f4068,color:#fff
+    style L3 fill:#2d5016,stroke:#4a7c23,color:#fff
+    style L2 fill:#8b0000,stroke:#a00000,color:#fff
 ```
 
 ---
@@ -103,42 +139,34 @@ Costs don't matter                 $5/day vs $500/day matters
 
 A production system prompt is NOT "You are a helpful assistant." It's a structured document.
 
+```mermaid
+flowchart TB
+    subgraph Prompt["📝 SYSTEM PROMPT ARCHITECTURE"]
+        direction TB
+        
+        S1["🎭 1. ROLE & IDENTITY<br/><i>Who is this AI? What's its expertise?</i>"]
+        S2["🚫 2. BEHAVIORAL CONSTRAINTS<br/><i>What must it always/never do?</i>"]
+        S3["📋 3. OUTPUT FORMAT<br/><i>Exact format expected (JSON, etc.)</i>"]
+        S4["📏 4. DOMAIN RULES<br/><i>Business logic the model must follow</i>"]
+        S5["📖 5. FEW-SHOT EXAMPLES<br/><i>2-3 ideal input/output pairs</i>"]
+        S6["📄 6. CONTEXT HANDLING<br/><i>How to use retrieved context</i>"]
+        
+        S1 --> S2 --> S3 --> S4 --> S5 --> S6
+    end
+    
+    style S1 fill:#16213e,stroke:#1f4068,color:#fff
+    style S2 fill:#8b0000,stroke:#a00000,color:#fff
+    style S3 fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style S4 fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style S5 fill:#8b4513,stroke:#a0522d,color:#fff
+    style S6 fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
-SYSTEM PROMPT ARCHITECTURE:
 
-┌─────────────────────────────────────────────────┐
-│ 1. ROLE & IDENTITY                               │
-│    Who is this AI? What's its expertise?         │
-│    "You are a senior EV battery diagnostic       │
-│    engineer specializing in NMC and LFP cells."  │
-├─────────────────────────────────────────────────┤
-│ 2. BEHAVIORAL CONSTRAINTS                        │
-│    What must it always/never do?                 │
-│    "Always cite sources. Never guess. If unsure, │
-│    say so. Never provide safety-critical advice  │
-│    without human verification flag."             │
-├─────────────────────────────────────────────────┤
-│ 3. OUTPUT FORMAT                                 │
-│    Exact format expected                         │
-│    "Respond in this JSON structure:              │
-│    {diagnosis, confidence, evidence, action}"    │
-├─────────────────────────────────────────────────┤
-│ 4. DOMAIN RULES                                  │
-│    Business logic the model must follow          │
-│    "Safety-critical findings (thermal risk,      │
-│    capacity < 70%) must be flagged as URGENT."   │
-├─────────────────────────────────────────────────┤
-│ 5. FEW-SHOT EXAMPLES                            │
-│    2-3 examples of ideal input/output pairs      │
-│    "Example: Query: '...' Response: '...'"       │
-├─────────────────────────────────────────────────┤
-│ 6. CONTEXT HANDLING INSTRUCTIONS                 │
-│    How to use retrieved context                  │
-│    "Use ONLY the <documents> section below.      │
-│    Do not use your training knowledge for        │
-│    specific vehicle data or specifications."     │
-└─────────────────────────────────────────────────┘
-```
+**Example:**
+- **Role:** "You are a senior EV battery diagnostic engineer specializing in NMC and LFP cells."
+- **Constraints:** "Always cite sources. Never guess. Flag safety-critical advice for human verification."
+- **Format:** `{diagnosis, confidence, evidence, action}`
+- **Rules:** "Capacity < 70% = URGENT flag"
 
 ### Pattern 2: Chain of Thought (CoT)
 
@@ -488,27 +516,23 @@ Changing tool: rewrite code           Changing tool: swap server
 
 ### MCP Architecture
 
-```
-┌───────────────────────────────────────────────┐
-│ AI APPLICATION (MCP Host)                      │
-│                                                │
-│  ┌──────────────────┐                         │
-│  │ MCP Client       │                         │
-│  │ (built into      │                         │
-│  │  your app)       │                         │
-│  └────────┬─────────┘                         │
-└───────────┼───────────────────────────────────┘
-            │ MCP Protocol (JSON-RPC)
-            │
-   ┌────────┼────────────────────┐
-   ▼        ▼                    ▼
-┌──────┐ ┌──────┐           ┌──────┐
-│ MCP   │ │ MCP   │           │ MCP   │
-│Server│ │Server│           │Server│
-│      │ │      │           │      │
-│ DB   │ │ API  │           │ File │
-│Access│ │ Tool │           │System│
-└──────┘ └──────┘           └──────┘
+```mermaid
+flowchart TB
+    subgraph Host["🏛️ AI APPLICATION (MCP Host)"]
+        App["Your AI System"]
+        Client["🔌 MCP Client<br/><i>built into your app</i>"]
+        App --> Client
+    end
+    
+    Client -->|"MCP Protocol<br/>(JSON-RPC)"| DB["🗄️ MCP Server<br/><b>DB Access</b>"]
+    Client -->|"MCP Protocol<br/>(JSON-RPC)"| API["🔗 MCP Server<br/><b>API Tool</b>"]
+    Client -->|"MCP Protocol<br/>(JSON-RPC)"| File["📁 MCP Server<br/><b>File System</b>"]
+    
+    style Host fill:#16213e,stroke:#1f4068,color:#fff
+    style Client fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style DB fill:#2d5016,stroke:#4a7c23,color:#fff
+    style API fill:#2d5016,stroke:#4a7c23,color:#fff
+    style File fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 ### What MCP Servers Provide
@@ -533,52 +557,82 @@ Changing tool: rewrite code           Changing tool: swap server
 
 ### Pattern A: Conversational Q&A (e.g., Documentation Assistant)
 
-```
-User ─→ API ─→ Guardrails ─→ RAG Pipeline ─→ LLM ─→ Guardrails ─→ User
-                                  │
-                            Vector DB
-                            (your docs)
+```mermaid
+flowchart LR
+    User["👤 User"] --> API["API"]
+    API --> G1["🛡️ Guard"]
+    G1 --> RAG["📄 RAG Pipeline"]
+    RAG --> DB[("🔍 Vector DB")]
+    RAG --> LLM["🤖 LLM"]
+    LLM --> G2["🛡️ Guard"]
+    G2 --> Response["✅ Response"]
+    
+    style RAG fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style LLM fill:#1a4d8f,stroke:#2a6ab8,color:#fff
 ```
 
 **Key decisions:** Chunking strategy, embedding model, reranker, system prompt, citation format
 
 ### Pattern B: Autonomous Agent (e.g., Diagnostic Agent)
 
-```
-User ─→ API ─→ Agent Loop ─→ Tools ─→ Agent Loop ─→ ... ─→ Response
-                  │       ↗
-                  └── LLM ──→ Tool Call ──→ Tool Result ──┘
-                        │
-                  Memory (conversation + retrieved context)
+```mermaid
+flowchart LR
+    User["👤 User"] --> API["API"]
+    API --> Loop["🔄 Agent Loop"]
+    
+    Loop --> LLM["🤖 LLM"]
+    LLM --> Tools["🛠️ Tools"]
+    Tools --> Loop
+    
+    Loop --> Memory[("💾 Memory")]
+    Loop --> Response["✅ Response"]
+    
+    style Loop fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style LLM fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style Tools fill:#8b4513,stroke:#a0522d,color:#fff
 ```
 
 **Key decisions:** Tool design, loop limit, escalation criteria, memory strategy
 
 ### Pattern C: Pipeline/Workflow (e.g., Report Generator)
 
-```
-Input ─→ Extract ─→ Analyze ─→ Gate ─→ Generate ─→ Validate ─→ Output
-         (LLM)      (LLM)    (code)    (LLM)      (LLM+code)
+```mermaid
+flowchart LR
+    Input["📨 Input"] --> Extract["🤖 Extract"]
+    Extract --> Analyze["🤖 Analyze"]
+    Analyze --> Gate{"⚖️ Gate"}
+    Gate --> Generate["🤖 Generate"]
+    Generate --> Validate["✅ Validate"]
+    Validate --> Output["📝 Output"]
+    
+    style Extract fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Analyze fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Generate fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Gate fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style Output fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 **Key decisions:** Step boundaries, gate criteria, error handling between steps
 
 ### Pattern D: Multi-Model System (e.g., Fleet Intelligence)
 
-```
-                    ┌─────────────┐
-                    │  Router      │
-                    │  (Haiku)     │
-                    └──────┬──────┘
-              ┌────────────┼────────────┐
-              ▼            ▼            ▼
-        ┌──────────┐ ┌──────────┐ ┌──────────┐
-        │ Battery   │ │ Motor    │ │ General  │
-        │ Expert    │ │ Expert   │ │ Assistant│
-        │ (Sonnet   │ │ (Sonnet  │ │ (Haiku)  │
-        │ + battery │ │ + motor  │ │          │
-        │   RAG)    │ │   RAG)   │ │          │
-        └──────────┘ └──────────┘ └──────────┘
+```mermaid
+flowchart TB
+    Input["📨 Query"] --> Router["🎯 Router<br/>(Haiku)"]
+    
+    Router --> Battery["🔋 Battery Expert<br/>(Sonnet + Battery RAG)"]
+    Router --> Motor["⚙️ Motor Expert<br/>(Sonnet + Motor RAG)"]
+    Router --> General["💬 General Assistant<br/>(Haiku)"]
+    
+    Battery --> Response["✅ Response"]
+    Motor --> Response
+    General --> Response
+    
+    style Router fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style Battery fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style Motor fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style General fill:#8b4513,stroke:#a0522d,color:#fff
+    style Response fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
 
 **Key decisions:** Routing accuracy, specialized context per expert, fallback handling
@@ -589,38 +643,48 @@ Input ─→ Extract ─→ Analyze ─→ Gate ─→ Generate ─→ Validate 
 
 ### How to Ship AI Products Incrementally
 
+```mermaid
+flowchart LR
+    subgraph V0["V0: POC<br/>(1-2 days)"]
+        direction TB
+        V0a["Single LLM call"]
+        V0b["No RAG/tools"]
+        V0c["10 test queries"]
+    end
+    
+    subgraph V1["V1: MVP<br/>(1-2 weeks)"]
+        direction TB
+        V1a["Basic RAG"]
+        V1b["Simple guardrails"]
+        V1c["50 test cases"]
+    end
+    
+    subgraph V2["V2: Beta<br/>(2-4 weeks)"]
+        direction TB
+        V2a["Hybrid search"]
+        V2b["Model routing"]
+        V2c["Tracing + evals"]
+    end
+    
+    subgraph V3["V3: Production<br/>(weeks 4+)"]
+        direction TB
+        V3a["HITL"]
+        V3b["Drift detection"]
+        V3c["Full observability"]
+    end
+    
+    V0 --> V1 --> V2 --> V3
+    
+    style V0 fill:#16213e,stroke:#1f4068,color:#fff
+    style V1 fill:#5c2751,stroke:#8e3c7c,color:#fff
+    style V2 fill:#1a4d8f,stroke:#2a6ab8,color:#fff
+    style V3 fill:#2d5016,stroke:#4a7c23,color:#fff
 ```
-V0: Proof of Concept (1-2 days)
-├── Single LLM call with good system prompt
-├── No RAG, no tools, no guardrails
-├── Test with 10 representative queries
-└── Goal: Validate the LLM can do this task AT ALL
 
-V1: Minimum Viable Product (1-2 weeks)
-├── RAG with basic chunking + vector search
-├── Simple system prompt
-├── Basic input/output guardrails
-├── Manual evaluation on 50 test cases
-└── Goal: Validate with real users (internal)
-
-V2: Production Beta (2-4 weeks)
-├── Hybrid search + reranking
-├── Model routing (cheap + capable)
-├── Tracing + cost monitoring
-├── Automated eval pipeline (100+ test cases)
-├── Caching for common queries
-├── Streaming responses
-└── Goal: Handle real traffic, measure quality
-
-V3: Production (weeks 4+)
-├── Advanced context engineering
-├── Human-in-the-loop for edge cases
-├── Drift detection + alerting
-├── A/B testing framework
-├── Full observability dashboard
-├── Incident response runbook
-└── Goal: Reliable, scalable, continuously improving
-```
+**V0 Goal:** Validate the LLM can do this task AT ALL  
+**V1 Goal:** Validate with real users (internal)  
+**V2 Goal:** Handle real traffic, measure quality  
+**V3 Goal:** Reliable, scalable, continuously improving
 
 ### The Most Important Thing
 
